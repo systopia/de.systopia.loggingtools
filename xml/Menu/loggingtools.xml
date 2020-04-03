@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<menu>
+  <item>
+    <path>civicrm/admin/loggingtools</path>
+    <page_callback>CRM_Loggingtools_Form_Settings</page_callback>
+    <title>Logging Tools Settings</title>
+    <access_arguments>administer CiviCRM</access_arguments>
+    <adminGroup>System Settings</adminGroup>
+    <icon>admin/small/05.png</icon>
+    <weight>100</weight>
+  </item>
+</menu>

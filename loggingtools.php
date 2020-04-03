@@ -1,15 +1,27 @@
 <?php
 
 require_once 'loggingtools.civix.php';
+
 use CRM_Loggingtools_ExtensionUtil as E;
+
+/**
+ * Exclude the configured tables from logging
+ *
+ * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_alterLogTables/
+ */
+function loggingtools_civicrm_alterLogTables(&$logTableSpec)
+{
+    CRM_Loggingtools_LoggingTables::excludeLogTables($logTableSpec);
+}
 
 /**
  * Implements hook_civicrm_config().
  *
- * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_config/ 
+ * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_config/
  */
-function loggingtools_civicrm_config(&$config) {
-  _loggingtools_civix_civicrm_config($config);
+function loggingtools_civicrm_config(&$config)
+{
+    _loggingtools_civix_civicrm_config($config);
 }
 
 /**
@@ -17,8 +29,9 @@ function loggingtools_civicrm_config(&$config) {
  *
  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_xmlMenu
  */
-function loggingtools_civicrm_xmlMenu(&$files) {
-  _loggingtools_civix_civicrm_xmlMenu($files);
+function loggingtools_civicrm_xmlMenu(&$files)
+{
+    _loggingtools_civix_civicrm_xmlMenu($files);
 }
 
 /**
@@ -26,8 +39,9 @@ function loggingtools_civicrm_xmlMenu(&$files) {
  *
  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_install
  */
-function loggingtools_civicrm_install() {
-  _loggingtools_civix_civicrm_install();
+function loggingtools_civicrm_install()
+{
+    _loggingtools_civix_civicrm_install();
 }
 
 /**
@@ -35,8 +49,9 @@ function loggingtools_civicrm_install() {
  *
  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_postInstall
  */
-function loggingtools_civicrm_postInstall() {
-  _loggingtools_civix_civicrm_postInstall();
+function loggingtools_civicrm_postInstall()
+{
+    _loggingtools_civix_civicrm_postInstall();
 }
 
 /**
@@ -44,8 +59,9 @@ function loggingtools_civicrm_postInstall() {
  *
  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_uninstall
  */
-function loggingtools_civicrm_uninstall() {
-  _loggingtools_civix_civicrm_uninstall();
+function loggingtools_civicrm_uninstall()
+{
+    _loggingtools_civix_civicrm_uninstall();
 }
 
 /**
@@ -53,8 +69,9 @@ function loggingtools_civicrm_uninstall() {
  *
  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_enable
  */
-function loggingtools_civicrm_enable() {
-  _loggingtools_civix_civicrm_enable();
+function loggingtools_civicrm_enable()
+{
+    _loggingtools_civix_civicrm_enable();
 }
 
 /**
@@ -62,8 +79,9 @@ function loggingtools_civicrm_enable() {
  *
  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_disable
  */
-function loggingtools_civicrm_disable() {
-  _loggingtools_civix_civicrm_disable();
+function loggingtools_civicrm_disable()
+{
+    _loggingtools_civix_civicrm_disable();
 }
 
 /**
@@ -71,8 +89,9 @@ function loggingtools_civicrm_disable() {
  *
  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_upgrade
  */
-function loggingtools_civicrm_upgrade($op, CRM_Queue_Queue $queue = NULL) {
-  return _loggingtools_civix_civicrm_upgrade($op, $queue);
+function loggingtools_civicrm_upgrade($op, CRM_Queue_Queue $queue = null)
+{
+    return _loggingtools_civix_civicrm_upgrade($op, $queue);
 }
 
 /**
@@ -83,8 +102,9 @@ function loggingtools_civicrm_upgrade($op, CRM_Queue_Queue $queue = NULL) {
  *
  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_managed
  */
-function loggingtools_civicrm_managed(&$entities) {
-  _loggingtools_civix_civicrm_managed($entities);
+function loggingtools_civicrm_managed(&$entities)
+{
+    _loggingtools_civix_civicrm_managed($entities);
 }
 
 /**
@@ -96,8 +116,9 @@ function loggingtools_civicrm_managed(&$entities) {
  *
  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_caseTypes
  */
-function loggingtools_civicrm_caseTypes(&$caseTypes) {
-  _loggingtools_civix_civicrm_caseTypes($caseTypes);
+function loggingtools_civicrm_caseTypes(&$caseTypes)
+{
+    _loggingtools_civix_civicrm_caseTypes($caseTypes);
 }
 
 /**
@@ -110,8 +131,9 @@ function loggingtools_civicrm_caseTypes(&$caseTypes) {
  *
  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_angularModules
  */
-function loggingtools_civicrm_angularModules(&$angularModules) {
-  _loggingtools_civix_civicrm_angularModules($angularModules);
+function loggingtools_civicrm_angularModules(&$angularModules)
+{
+    _loggingtools_civix_civicrm_angularModules($angularModules);
 }
 
 /**
@@ -119,8 +141,9 @@ function loggingtools_civicrm_angularModules(&$angularModules) {
  *
  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_alterSettingsFolders
  */
-function loggingtools_civicrm_alterSettingsFolders(&$metaDataFolders = NULL) {
-  _loggingtools_civix_civicrm_alterSettingsFolders($metaDataFolders);
+function loggingtools_civicrm_alterSettingsFolders(&$metaDataFolders = null)
+{
+    _loggingtools_civix_civicrm_alterSettingsFolders($metaDataFolders);
 }
 
 /**
@@ -130,15 +153,17 @@ function loggingtools_civicrm_alterSettingsFolders(&$metaDataFolders = NULL) {
  *
  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_entityTypes
  */
-function loggingtools_civicrm_entityTypes(&$entityTypes) {
-  _loggingtools_civix_civicrm_entityTypes($entityTypes);
+function loggingtools_civicrm_entityTypes(&$entityTypes)
+{
+    _loggingtools_civix_civicrm_entityTypes($entityTypes);
 }
 
 /**
  * Implements hook_civicrm_thems().
  */
-function loggingtools_civicrm_themes(&$themes) {
-  _loggingtools_civix_civicrm_themes($themes);
+function loggingtools_civicrm_themes(&$themes)
+{
+    _loggingtools_civix_civicrm_themes($themes);
 }
 
 // --- Functions below this ship commented out. Uncomment as required. ---
@@ -148,23 +173,23 @@ function loggingtools_civicrm_themes(&$themes) {
  *
  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_preProcess
  *
-function loggingtools_civicrm_preProcess($formName, &$form) {
-
-} // */
+ * function loggingtools_civicrm_preProcess($formName, &$form) {
+ *
+ * } // */
 
 /**
  * Implements hook_civicrm_navigationMenu().
  *
  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_navigationMenu
  *
-function loggingtools_civicrm_navigationMenu(&$menu) {
-  _loggingtools_civix_insert_navigation_menu($menu, 'Mailings', array(
-    'label' => E::ts('New subliminal message'),
-    'name' => 'mailing_subliminal_message',
-    'url' => 'civicrm/mailing/subliminal',
-    'permission' => 'access CiviMail',
-    'operator' => 'OR',
-    'separator' => 0,
-  ));
-  _loggingtools_civix_navigationMenu($menu);
-} // */
+ * function loggingtools_civicrm_navigationMenu(&$menu) {
+ * _loggingtools_civix_insert_navigation_menu($menu, 'Mailings', array(
+ * 'label' => E::ts('New subliminal message'),
+ * 'name' => 'mailing_subliminal_message',
+ * 'url' => 'civicrm/mailing/subliminal',
+ * 'permission' => 'access CiviMail',
+ * 'operator' => 'OR',
+ * 'separator' => 0,
+ * ));
+ * _loggingtools_civix_navigationMenu($menu);
+ * } // */
