@@ -9,4 +9,13 @@
     <icon>admin/small/05.png</icon>
     <weight>100</weight>
   </item>
+  <item>
+    <path>civicrm/admin/loggingtools/truncate</path>
+    <page_callback>CRM_Loggingtools_Form_Truncating</page_callback>
+    <title>Logging Tools Truncation</title>
+    <access_arguments>administer CiviCRM</access_arguments>
+    <adminGroup>System Settings</adminGroup>
+    <icon>admin/small/05.png</icon>
+    <weight>200</weight>
+  </item>
 </menu>
