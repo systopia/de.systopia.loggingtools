@@ -19,7 +19,7 @@ use CRM_Loggingtools_ExtensionUtil as E;
 /**
  * The launcher for a queue/runner generating documents.
  */
-abstract class CRM_Loggingtools_Queue_Runner_TruncatingLauncher
+abstract class CRM_Loggingtools_Queue_Runner_TruncationLauncher
 {
     /**
      * Create a runner
@@ -34,16 +34,16 @@ abstract class CRM_Loggingtools_Queue_Runner_TruncatingLauncher
             [
                 'type' => 'Sql',
                 // TODO: Maybe the name should be postfixed with an unique value to prevent collisions:
-                'name' => 'loggingtools_truncating_' . CRM_Core_Session::singleton()->getLoggedInContactID(),
+                'name' => 'loggingtools_truncation_' . CRM_Core_Session::singleton()->getLoggedInContactID(),
                 'reset' => true,
             ]
         );
 
-        $queue->createItem(new CRM_Loggingtools_Queue_Runner_TruncatingRunnerStart());
+        $queue->createItem(new CRM_Loggingtools_Queue_Runner_TruncationRunnerStart());
 
         foreach ($tableNames as $tableName) {
             $queue->createItem(
-                new CRM_Loggingtools_Queue_Runner_TruncatingRunner(
+                new CRM_Loggingtools_Queue_Runner_TruncationRunner(
                     $keepSinceDateTime,
                     $tableName,
                     $cleanupDeletedEntities
@@ -54,7 +54,7 @@ abstract class CRM_Loggingtools_Queue_Runner_TruncatingLauncher
         $loggingControl = new CRM_Logging_Schema();
         $loggingIsEnabled = $loggingControl->isEnabled();
 
-        $queue->createItem(new CRM_Loggingtools_Queue_Runner_TruncatingRunnerEnd($loggingIsEnabled));
+        $queue->createItem(new CRM_Loggingtools_Queue_Runner_TruncationRunnerEnd($loggingIsEnabled));
 
         $runner = new CRM_Queue_Runner(
             [

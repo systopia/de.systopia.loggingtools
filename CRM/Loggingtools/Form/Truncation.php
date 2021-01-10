@@ -75,7 +75,7 @@ class CRM_Loggingtools_Form_Truncation extends CRM_Core_Form
         // Forward back to the previous page:
         $targetUrl = html_entity_decode(CRM_Core_Session::singleton()->readUserContext());
 
-        CRM_Loggingtools_Queue_Runner_TruncatingLauncher::launchRunnerViaWeb(
+        CRM_Loggingtools_Queue_Runner_TruncationLauncher::launchRunnerViaWeb(
             $keepSinceDateTime,
             $tableNames,
             $cleanupDeletedEntities,
