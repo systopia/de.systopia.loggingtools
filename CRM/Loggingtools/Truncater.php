@@ -21,6 +21,16 @@ use CRM_Loggingtools_ExtensionUtil as E;
  */
 class CRM_Loggingtools_Truncater
 {
+    /**
+     * Truncate the given logging table.
+     *
+     * @param string $keepSinceDateTimeString The point in time up to which the logging entries will be truncated.
+     * @param string $tableName The name of the logging table to truncate.
+     *                          NOTE: We assume that this is a safe string, e.g. no user input that needed to be escaped.
+     * @param string $cleanupDeletedEntities If true, all deleted entities (including the ones that have been deleted
+     *                                       after $keepSinceDateTimeString) will be fully truncated.
+     *                                       NOTE: This is not implemented yet.
+     */
     public function truncate(
         string $keepSinceDateTimeString,
         string $tableName,
@@ -31,6 +41,7 @@ class CRM_Loggingtools_Truncater
         try {
             $this->run($keepSinceDateTimeString, $tableName, $cleanupDeletedEntities);
         } catch (Throwable $error) {
+            // TODO: The transaction does not include creation or renaming of tables.
             $transaction->rollback();
 
             Civi::log()->warning("Truncating logging table {$tableName} failed: " . $error->getMessage());
@@ -41,6 +52,9 @@ class CRM_Loggingtools_Truncater
         $transaction->commit();
     }
 
+    /**
+     * The internal running function for $this->truncate, allowing an easy exception wrapper around it.
+     */
     private function run(
         string $keepSinceDateTimeString,
         string $tableName,
@@ -60,7 +74,7 @@ class CRM_Loggingtools_Truncater
 
         $lastDateTime = new DateTime('0000-00-00');
         while ($dao->fetch()) {
-            $row = $this->getKeyValueMap($dao, $tempTableName);
+            $row = $this->getColumnNamesToValues($dao, $tempTableName);
 
             $date = new DateTime($row['log_date']);
 
@@ -103,9 +117,11 @@ class CRM_Loggingtools_Truncater
         $this->finalise($tableName, $oldTableName, $tempTableName);
     }
 
+    /**
+     * Initialise the database table structure.
+     */
     private function initialise(string $tableName, string $oldTableName, string $tempTableName): void
     {
-        // FIXME: Check if "$tableName" can be user input. Then we MUST use it as parameter in this function:
         CRM_Core_DAO::executeQuery("DROP TABLE IF EXISTS {$oldTableName}");
         CRM_Core_DAO::executeQuery("DROP TABLE IF EXISTS {$tempTableName}");
 
@@ -116,6 +132,9 @@ class CRM_Loggingtools_Truncater
         CRM_Core_DAO::executeQuery("ALTER TABLE {$tempTableName} ADD PRIMARY KEY (id)");
     }
 
+    /**
+     * Finalise the database table structure by taking it back to its previous structure.
+     */
     private function finalise(string $tableName, string $oldTableName, string $tempTableName): void
     {
         CRM_Core_DAO::executeQuery("ALTER TABLE {$tempTableName} DROP INDEX IF EXISTS `PRIMARY`");
@@ -126,6 +145,9 @@ class CRM_Loggingtools_Truncater
         CRM_Core_DAO::executeQuery("DROP TABLE IF EXISTS {$tempTableName}");
     }
 
+    /**
+     * Insert a row into the given table.
+     */
     private function insert(array $row, string $tableName): void
     {
         // TODO: The column string could be cached.
@@ -135,7 +157,7 @@ class CRM_Loggingtools_Truncater
         $placeholders = [];
         $counter = 1;
 
-        $columnsAndTypes = $this->getColumnNamesAndTypes($tableName);
+        $columnsAndTypes = $this->getColumnNamesToTypes($tableName);
 
         foreach ($columnsAndTypes as $columnName => $type) {
             $value = $row[$columnName];
@@ -167,13 +189,16 @@ class CRM_Loggingtools_Truncater
         );
     }
 
+    /**
+     * Update a row in the given table.
+     */
     private function update(array $row, string $tableName): void
     {
         $keyPlaceholderList = [];
         $parameters = [];
         $counter = 1;
 
-        $columnsAndTypes = $this->getColumnNamesAndTypes($tableName);
+        $columnsAndTypes = $this->getColumnNamesToTypes($tableName);
 
         foreach ($columnsAndTypes as $columnName => $type) {
             $value = $row[$columnName];
@@ -209,6 +234,9 @@ class CRM_Loggingtools_Truncater
         );
     }
 
+    /**
+     * Delete a row from the given table.
+     */
     private function delete(array $row, string $tableName): void
     {
         $rowId = $row['id'];
@@ -216,9 +244,12 @@ class CRM_Loggingtools_Truncater
         CRM_Core_DAO::executeQuery("DELETE FROM {$tableName} WHERE id = {$rowId}");
     }
 
-    private function getKeyValueMap(CRM_Core_DAO $dao, string $tableName): array
+    /**
+     * Get the columns and their values of the given DAO as a key-value-pair.
+     */
+    private function getColumnNamesToValues(CRM_Core_DAO $dao, string $tableName): array
     {
-        $columnsAndTypes = $this->getColumnNamesAndTypes($tableName);
+        $columnsAndTypes = $this->getColumnNamesToTypes($tableName);
 
         $result = [];
 
@@ -229,7 +260,10 @@ class CRM_Loggingtools_Truncater
         return $result;
     }
 
-    private function getColumnNamesAndTypes(string $tableName): array
+    /**
+     * Get the columns and their types of the given table as a key-value-pair.
+     */
+    private function getColumnNamesToTypes(string $tableName): array
     {
         $dao = CRM_Core_DAO::executeQuery(
             "SELECT COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE table_name = '{$tableName}'"

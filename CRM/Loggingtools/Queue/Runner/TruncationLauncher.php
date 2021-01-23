@@ -33,7 +33,7 @@ abstract class CRM_Loggingtools_Queue_Runner_TruncationLauncher
         $queue = CRM_Queue_Service::singleton()->create(
             [
                 'type' => 'Sql',
-                // TODO: Maybe the name should be postfixed with an unique value to prevent collisions:
+                // TODO: The name should be postfixed with an unique value to prevent collisions:
                 'name' => 'loggingtools_truncation_' . CRM_Core_Session::singleton()->getLoggedInContactID(),
                 'reset' => true,
             ]
