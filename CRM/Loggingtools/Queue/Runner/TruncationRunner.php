@@ -19,7 +19,7 @@ use CRM_Loggingtools_ExtensionUtil as E;
 /**
  * The queue/runner.
  */
-class CRM_Loggingtools_Queue_Runner_TruncatingRunner
+class CRM_Loggingtools_Queue_Runner_TruncationRunner
 {
     /** @var string $title Will be set as title by the runner. */
     public $title;

@@ -11,7 +11,7 @@
   </item>
   <item>
     <path>civicrm/admin/loggingtools/truncate</path>
-    <page_callback>CRM_Loggingtools_Form_Truncating</page_callback>
+    <page_callback>CRM_Loggingtools_Form_Truncation</page_callback>
     <title>Logging Tools Truncation</title>
     <access_arguments>administer CiviCRM</access_arguments>
     <adminGroup>System Settings</adminGroup>
