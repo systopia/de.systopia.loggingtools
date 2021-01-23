@@ -93,7 +93,7 @@ class CRM_Loggingtools_Form_Truncation extends CRM_Core_Form
     {
         $result = [
             6 => E::ts('Last %1 months', [1 => 6]),
-            12 => E::ts('Last %1 months', [1 => 6]),
+            12 => E::ts('Last %1 months', [1 => 12]),
             24 => E::ts('Last %1 years', [1 => 2]),
             60 => E::ts('Last %1 years', [1 => 5]),
             'custom' => E::ts('Custom date'),
