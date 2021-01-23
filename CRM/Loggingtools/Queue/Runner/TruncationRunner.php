@@ -39,7 +39,8 @@ class CRM_Loggingtools_Queue_Runner_TruncationRunner
 
     public function run(): bool
     {
-        CRM_Loggingtools_Truncater::truncate($this->keepSinceDateTime, $this->tableName, $this->cleanupDeletedEntities);
+        $truncater = new CRM_Loggingtools_Truncater();
+        $truncater->truncate($this->keepSinceDateTime, $this->tableName, $this->cleanupDeletedEntities);
 
         return true;
     }
