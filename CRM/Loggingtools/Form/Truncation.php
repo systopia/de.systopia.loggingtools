@@ -69,15 +69,36 @@ class CRM_Loggingtools_Form_Truncation extends CRM_Core_Form
 
         $values  = $this->exportValues();
 
-        // update logging tables
-        CRM_Loggingtools_LoggingTables::setExcludedTables($values['exclude_logging_tables']);
+        $keepSinceDateTime = null;
+
+        if ($values['time_horizon'] === 'custom') {
+            $keepSinceDateTime = new DateTime($values['custom_time_horizon']);
+        } else {
+            $keepSinceDateTime = new DateTime();
+
+            $timeHorizon = new DateInterval('P' . $values['time_horizon'] . 'M');
+
+            $keepSinceDateTime->sub($timeHorizon);
+        }
+
+        $keepSinceDateTimeString = $keepSinceDateTime->format('YmdHis');
+
+        $loggingControl = new CRM_Logging_Schema();
+        $logTableSpec = $loggingControl->getLogTableSpec();
+
+        $loggingTables = [];
+        foreach ($logTableSpec as $key => $value) {
+            $loggingTables[] = 'log_' . $key;
+        }
+
+        $cleanupDeletedEntities = false;
 
         // Forward back to the previous page:
         $targetUrl = html_entity_decode(CRM_Core_Session::singleton()->readUserContext());
 
         CRM_Loggingtools_Queue_Runner_TruncationLauncher::launchRunnerViaWeb(
-            $keepSinceDateTime,
-            $tableNames,
+            $keepSinceDateTimeString,
+            $loggingTables,
             $cleanupDeletedEntities,
             $targetUrl
         );
