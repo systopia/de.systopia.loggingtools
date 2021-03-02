@@ -79,7 +79,7 @@ class CRM_Loggingtools_Truncater
             $date = new DateTime($row['log_date']);
 
             if ($lastDateTime > $date) {
-                throw new Exception(E::ts('The log tabel is not ordered by time.'));
+                throw new Exception(E::ts('The log table is not ordered by time.'));
             }
 
             if ($date >= $keepSinceDateTime) {
@@ -127,7 +127,11 @@ class CRM_Loggingtools_Truncater
 
         CRM_Core_DAO::executeQuery("RENAME TABLE {$tableName} TO {$oldTableName}");
 
-        CRM_Core_DAO::executeQuery("CREATE TABLE {$tempTableName} LIKE {$oldTableName}");
+        CRM_Core_DAO::executeQuery("CREATE TABLE {$tempTableName} AS SELECT * FROM {$oldTableName}");
+
+        //CRM_Core_DAO::executeQuery("CREATE TABLE {$tempTableName} LIKE {$oldTableName}");
+
+        //CRM_Core_DAO::executeQuery("ALTER TABLE {$tempTableName} ENGINE = InnoDB");
 
         CRM_Core_DAO::executeQuery("ALTER TABLE {$tempTableName} ADD PRIMARY KEY (id)");
     }
