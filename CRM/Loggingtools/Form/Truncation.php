@@ -87,9 +87,22 @@ class CRM_Loggingtools_Form_Truncation extends CRM_Core_Form
         $logTableSpec = $loggingControl->getLogTableSpec();
 
         $loggingTables = [];
+        $dao = new CRM_Core_DAO();
         foreach ($logTableSpec as $key => $value) {
-            $loggingTables[] = 'log_' . $key;
+            $potential_logging_table = 'log_' . $key;
+
+            // make sure it exists
+            $table_exists = CRM_Core_DAO::executeQuery("
+                SELECT TABLE_NAME
+                FROM   INFORMATION_SCHEMA.TABLES
+                WHERE  TABLE_SCHEMA = '{$dao->_database}'
+                AND    TABLE_NAME = '{$potential_logging_table}'
+            ");
+            if ($table_exists->fetch()) {
+                $loggingTables[] = $potential_logging_table;
+            }
         }
+
 
         $cleanupDeletedEntities = false;
 
