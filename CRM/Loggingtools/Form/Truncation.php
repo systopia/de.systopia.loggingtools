@@ -47,6 +47,19 @@ class CRM_Loggingtools_Form_Truncation extends CRM_Core_Form
             ['class' => 'huge disabled']
         );
 
+        $this->add(
+            'select',
+            'logging_tables',
+            E::ts('Logging tables:'),
+            $this->getLoggingTables(),
+            false,
+            [
+                'class' => 'crm-select2 huge',
+                'multiple' => true,
+            ]
+        );
+        // TODO: There must be a possibility to easily select all logging tables.
+
         $this->addButtons(
             [
                 [
@@ -61,6 +74,30 @@ class CRM_Loggingtools_Form_Truncation extends CRM_Core_Form
                 ]
             ]
         );
+    }
+
+    public function validate()
+    {
+        $values  = $this->exportValues();
+
+        $allowedLoggingTables = $this->getLoggingTables();
+        $loggingTables = $values['logging_tables'];
+
+        foreach ($loggingTables as $loggingTable) {
+            // We assume that getLoggingTables returns a map (as it does for the UI elements) with the logging table
+            // name both as value and as key, so we can use the O(1) performing operation of array_key_exists to check
+            // whether the table name is valid:
+            if (!array_key_exists($loggingTable, $allowedLoggingTables)) {
+                $this->_errors['logging_tables'] = E::ts(
+                    'The given table name "%1" is not a valid logging table.',
+                    [1 => $loggingTable]
+                );
+                break;
+            }
+        }
+
+        parent::validate();
+        return (0 == count($this->_errors));
     }
 
     public function postProcess()
@@ -83,26 +120,11 @@ class CRM_Loggingtools_Form_Truncation extends CRM_Core_Form
 
         $keepSinceDateTimeString = $keepSinceDateTime->format('YmdHis');
 
-        $loggingControl = new CRM_Logging_Schema();
-        $logTableSpec = $loggingControl->getLogTableSpec();
-
-        $loggingTables = [];
-        $dao = new CRM_Core_DAO();
-        foreach ($logTableSpec as $key => $value) {
-            $potential_logging_table = 'log_' . $key;
-
-            // make sure it exists
-            $table_exists = CRM_Core_DAO::executeQuery("
-                SELECT TABLE_NAME
-                FROM   INFORMATION_SCHEMA.TABLES
-                WHERE  TABLE_SCHEMA = '{$dao->_database}'
-                AND    TABLE_NAME = '{$potential_logging_table}'
-            ");
-            if ($table_exists->fetch()) {
-                $loggingTables[] = $potential_logging_table;
-            }
+        $loggingTables = $values['logging_tables'];
+        if (empty($loggingTables)) {
+            $loggingTables = $this->getLoggingTables();
+            // TODO: This is not as clean as it should because getLoggingTables is a UI function returning a map.
         }
-
 
         $cleanupDeletedEntities = false;
 
@@ -134,5 +156,45 @@ class CRM_Loggingtools_Form_Truncation extends CRM_Core_Form
         ];
 
         return $result;
+    }
+
+    /**
+     * Get a list of all logging tables.
+     *
+     * @return array
+     *   map: logging table name => logging table name (key and value are identical)
+     */
+    private function getLoggingTables(): array
+    {
+        $loggingControl = new CRM_Logging_Schema();
+        $logTableSpec = $loggingControl->getLogTableSpec();
+
+        $loggingTables = [];
+        $dao = new CRM_Core_DAO();
+        foreach ($logTableSpec as $key => $value) {
+            $potential_logging_table = 'log_' . $key;
+
+            // Make sure it exists:
+            $table_exists = CRM_Core_DAO::executeQuery("
+                SELECT TABLE_NAME
+                FROM   INFORMATION_SCHEMA.TABLES
+                WHERE  TABLE_SCHEMA = '{$dao->_database}'
+                AND    TABLE_NAME = '{$potential_logging_table}'
+            ");
+            if ($table_exists->fetch()) {
+                $loggingTables[] = $potential_logging_table;
+            }
+        }
+
+        // We need the logging tables as name => name for the UI select elements:
+        /* TODO: This is a bit dirty as we do not only need these table names for the UI but for the logic as well.
+                 It would be best to have the possibility to get the names either as map or as a bare list.
+                 For this, something like a naming difference UI and logic lists/maps functions would be great. */
+        $loggingTablesAsKeyToValue = [];
+        foreach ($loggingTables as $loggingTable) {
+            $loggingTablesAsKeyToValue[$loggingTable] = $loggingTable;
+        }
+
+        return $loggingTablesAsKeyToValue;
     }
 }

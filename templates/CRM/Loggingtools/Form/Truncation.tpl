@@ -32,6 +32,11 @@
     <div class="content">{$form.custom_time_horizon.html}</div>
     <div class="clear"></div>
 </div>
+<div class="crm-section">
+    <div class="label">{$form.logging_tables.label}</div>
+    <div class="content">{$form.logging_tables.html}</div>
+    <div class="clear"></div>
+</div>
 
 <br>
 
