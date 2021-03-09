@@ -133,6 +133,7 @@ class CRM_Loggingtools_Truncater
 
         //CRM_Core_DAO::executeQuery("ALTER TABLE {$tempTableName} ENGINE = InnoDB");
 
+        // FIXME: The ID cannot be a primary key as it is not unique becuase the id is not a row ID but an entity ID.
         CRM_Core_DAO::executeQuery("ALTER TABLE {$tempTableName} ADD PRIMARY KEY (id)");
     }
 
