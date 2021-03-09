@@ -21,6 +21,9 @@ use CRM_Loggingtools_ExtensionUtil as E;
  */
 class CRM_Loggingtools_Truncater
 {
+    private const INDEX_COLUMNS = ['id', 'log_date'];
+    private const INDEX_PREFIX = 'truncation_'; // TODO: Do we need a better naming for the indexes?
+
     /**
      * Truncate the given logging table.
      *
@@ -60,254 +63,142 @@ class CRM_Loggingtools_Truncater
         string $tableName,
         bool $cleanupDeletedEntities = false // TODO: Implement full entity cleanup.
     ): void {
-        $oldTableName = $tableName . '_OLD';
-        $tempTableName = $tableName . '_TEMP';
+        $helperTableName = $tableName . '_truncation';
 
-        $keepSinceDateTime = new DateTime($keepSinceDateTimeString);
-
-        $this->initialise($tableName, $oldTableName, $tempTableName);
-
-        /** @var CRM_Core_DAO */
-        $dao = CRM_Core_DAO::executeQuery("SELECT * FROM {$oldTableName}");
-
-        $insertedIds = [];
-
-        $lastDateTime = new DateTime('0000-00-00');
-        while ($dao->fetch()) {
-            $row = $this->getColumnNamesToValues($dao, $tempTableName);
-
-            $date = new DateTime($row['log_date']);
-
-            if ($lastDateTime > $date) {
-                throw new Exception(E::ts('The log table is not ordered by time.'));
-            }
-
-            if ($date >= $keepSinceDateTime) {
-                // If this is the first entry after the cut off time we must drop the index because now IDs do not
-                // need to be unique anymore. Furthermore, this will increase insert performance.
-                if ($lastDateTime < $keepSinceDateTime) {
-                    CRM_Core_DAO::executeQuery("ALTER TABLE {$tempTableName} DROP INDEX IF EXISTS `PRIMARY`");
-                }
-
-                $this->insert($row, $tempTableName);
-            } else {
-                if ($row['log_action'] === 'Delete') {
-                    $this->delete($row, $tempTableName);
-                } else {
-                    $cutOffDateTimeString = $keepSinceDateTime->format('YmdHis');
-
-                    $row['log_date'] = $cutOffDateTimeString;
-                    $row['log_conn_id'] = 'NULL';
-                    $row['log_user_id'] = CRM_Core_Session::getLoggedInContactID();
-                    $row['log_action'] = 'Initialization';
-
-                    if (array_key_exists($row['id'], $insertedIds)) {
-                        $this->update($row, $tempTableName);
-                    } else {
-                        $this->insert($row, $tempTableName);
-
-                        $insertedIds[$row['id']] = true;
-                    }
-                }
-            }
-
-            $lastDateTime = $date;
-        }
-
-        $this->finalise($tableName, $oldTableName, $tempTableName);
+        $this->initialise($tableName, $helperTableName);
+        $this->populateHelperTable($tableName, $helperTableName, $keepSinceDateTimeString);
+        $this->deleteOldEntries($tableName, $helperTableName);
+        $this->setInitialisationEntries($tableName, $helperTableName, $keepSinceDateTimeString);
+        $this->finalise($tableName, $helperTableName);
     }
 
     /**
      * Initialise the database table structure.
      */
-    private function initialise(string $tableName, string $oldTableName, string $tempTableName): void
+    private function initialise(string $tableName, string $helperTableName): void
     {
-        CRM_Core_DAO::executeQuery("DROP TABLE IF EXISTS {$oldTableName}");
-        CRM_Core_DAO::executeQuery("DROP TABLE IF EXISTS {$tempTableName}");
+        foreach (self::INDEX_COLUMNS as $indexColumn) {
+            $indexName = self::INDEX_PREFIX . $indexColumn;
 
-        CRM_Core_DAO::executeQuery("RENAME TABLE {$tableName} TO {$oldTableName}");
+            /** @var CRM_Core_DAO */
+            $dao = CRM_Core_DAO::executeQuery(
+                "SELECT
+                    COUNT(*)
+                FROM
+                    information_schema.statistics
+                WHERE
+                    table_name = {$tableName} AND index_name = '{$indexName}'"
+            );
 
-        CRM_Core_DAO::executeQuery("CREATE TABLE {$tempTableName} AS SELECT * FROM {$oldTableName}");
+            $indexCount = $dao->fetchValue();
 
-        //CRM_Core_DAO::executeQuery("CREATE TABLE {$tempTableName} LIKE {$oldTableName}");
+            if ($indexCount == 0) {
+                CRM_Core_DAO::executeQuery("CREATE INDEX {$indexName} ON {$tableName}({$indexColumn})");
+            }
+        }
 
-        //CRM_Core_DAO::executeQuery("ALTER TABLE {$tempTableName} ENGINE = InnoDB");
+        CRM_Core_DAO::executeQuery("DROP TABLE IF EXISTS {$helperTableName}");
+        CRM_Core_DAO::executeQuery(
+            "CREATE TABLE
+                {$helperTableName}
+            (
+                `id` INTEGER UNSIGNED NOT NULL,
+                `log_date` TIMESTAMP NOT NULL,
+                UNIQUE INDEX `id` (`id`),
+                INDEX `log_date` (`log_date`)
+            )"
+        );
+    }
 
-        // FIXME: The ID cannot be a primary key as it is not unique becuase the id is not a row ID but an entity ID.
-        CRM_Core_DAO::executeQuery("ALTER TABLE {$tempTableName} ADD PRIMARY KEY (id)");
+    /**
+     * Write to the helper table the last timestamp for every entity ID which is before or at the keeping timestamp.
+     */
+    private function populateHelperTable(
+        string $tableName,
+        string $helperTableName,
+        string $keepSinceDateTimeString
+    ): void {
+        CRM_Core_DAO::executeQuery(
+            "INSERT INTO
+                {$helperTableName}
+            SELECT
+                up_to_cutoff.id AS id,
+                MAX(up_to_cutoff.log_date) AS log_date
+            FROM
+            (
+                SELECT
+                    *
+                FROM
+                    {$tableName}
+                WHERE
+                    log_date <= %1
+            ) AS up_to_cutoff
+            GROUP BY
+                up_to_cutoff.id",
+            [
+                1 => [$keepSinceDateTimeString, 'Timestamp']
+            ]
+        );
+    }
+
+    /**
+     * Delete all entries in the logging table for an entity ID that is present in the helper table and has a log_date
+     * that is older than the one in the helper table.
+     */
+    private function deleteOldEntries(string $tableName, string $helperTableName): void
+    {
+        CRM_Core_DAO::executeQuery(
+            "DELETE FROM
+                {$tableName} AS log_table
+            LEFT JOIN
+                {$helperTableName} AS helper_table
+                    ON
+                        helper_table.id = log_table.id
+            WHERE
+                helper_table.id IS NOT NULL
+                AND log_table.log_date < helper_table.log_date"
+        );
+    }
+
+    private function setInitialisationEntries(
+        string $tableName,
+        string $helperTableName,
+        string $keepSinceDateTimeString
+    ): void {
+        $userId = CRM_Core_Session::getLoggedInContactID();
+
+        CRM_Core_DAO::executeQuery(
+            "UPDATE
+                {$tableName} AS log_table
+            LEFT JOIN
+                {$helperTableName} AS helper_table
+                    ON
+                        helper_table.id = log_table.id
+            SET
+                log_table.log_action := 'Initialization',
+                log_table.log_date := %1,
+                log_table.log_user_id := {$userId}
+                log_table.log_conn_id := NULL
+            WHERE
+                helper_table.id IS NOT NULL
+                AND log_table.log_date = helper_table.log_date",
+            [
+                1 => [$keepSinceDateTimeString, 'Timestamp']
+            ]
+        );
     }
 
     /**
      * Finalise the database table structure by taking it back to its previous structure.
      */
-    private function finalise(string $tableName, string $oldTableName, string $tempTableName): void
+    private function finalise(string $tableName, string $helperTableName): void
     {
-        CRM_Core_DAO::executeQuery("ALTER TABLE {$tempTableName} DROP INDEX IF EXISTS `PRIMARY`");
+        CRM_Core_DAO::executeQuery("DROP TABLE IF EXISTS {$helperTableName}");
 
-        CRM_Core_DAO::executeQuery("RENAME TABLE {$tempTableName} TO {$tableName}");
+        foreach (self::INDEX_COLUMNS as $indexColumn) {
+            $indexName = self::INDEX_PREFIX . $indexColumn;
 
-        CRM_Core_DAO::executeQuery("DROP TABLE IF EXISTS {$oldTableName}");
-        CRM_Core_DAO::executeQuery("DROP TABLE IF EXISTS {$tempTableName}");
-    }
-
-    /**
-     * Insert a row into the given table.
-     */
-    private function insert(array $row, string $tableName): void
-    {
-        // TODO: The column string could be cached.
-        $columnsAsString = implode(', ', array_keys($row));
-
-        $parameters = [];
-        $placeholders = [];
-        $counter = 1;
-
-        $columnsAndTypes = $this->getColumnNamesToTypes($tableName);
-
-        foreach ($columnsAndTypes as $columnName => $type) {
-            $value = $row[$columnName];
-
-            if (($type === 'Date') || ($type === 'Timestamp')) {
-                $date = new DateTime($value);
-                $value = $date->format('YmdHis');
-            }
-
-            if ($value === null) {
-                $placeholders[] = 'NULL';
-            } else {
-                $parameters[$counter] = [$value, $type];
-
-                $placeholders[] = "%$counter";
-
-                $counter++;
-            }
+            CRM_Core_DAO::executeQuery("DROP INDEX {$indexName} ON {$tableName}");
         }
-
-        $placesholdersAsString = implode(', ', $placeholders);
-
-        CRM_Core_DAO::executeQuery(
-            "INSERT INTO
-                {$tableName} ({$columnsAsString})
-            VALUES
-                ($placesholdersAsString)",
-            $parameters
-        );
-    }
-
-    /**
-     * Update a row in the given table.
-     */
-    private function update(array $row, string $tableName): void
-    {
-        $keyPlaceholderList = [];
-        $parameters = [];
-        $counter = 1;
-
-        $columnsAndTypes = $this->getColumnNamesToTypes($tableName);
-
-        foreach ($columnsAndTypes as $columnName => $type) {
-            $value = $row[$columnName];
-
-            if (($type === 'Date') || ($type === 'Timestamp')) {
-                $date = new DateTime($value);
-                $value = $date->format('YmdHis');
-            }
-
-            if ($value === null) {
-                $$keyPlaceholderList[] = "$columnName = NULL";
-            } else {
-                $parameters[$counter] = [$value, $type];
-
-                $keyPlaceholderList[] = "$columnName = %$counter";
-
-                $counter++;
-            }
-        }
-
-        $keyPlaceholderListAsString = implode(', ', $keyPlaceholderList);
-
-        $rowId = $row['id'];
-
-        CRM_Core_DAO::executeQuery(
-            "UPDATE
-                {$tableName}
-            SET
-                {$keyPlaceholderListAsString}
-            WHERE
-                id = {$rowId}",
-            $parameters
-        );
-    }
-
-    /**
-     * Delete a row from the given table.
-     */
-    private function delete(array $row, string $tableName): void
-    {
-        $rowId = $row['id'];
-
-        CRM_Core_DAO::executeQuery("DELETE FROM {$tableName} WHERE id = {$rowId}");
-    }
-
-    /**
-     * Get the columns and their values of the given DAO as a key-value-pair.
-     */
-    private function getColumnNamesToValues(CRM_Core_DAO $dao, string $tableName): array
-    {
-        $columnsAndTypes = $this->getColumnNamesToTypes($tableName);
-
-        $result = [];
-
-        foreach ($columnsAndTypes as $columnName => $type) {
-            $result[$columnName] = $dao->$columnName;
-        }
-
-        return $result;
-    }
-
-    /**
-     * Get the columns and their types of the given table as a key-value-pair.
-     */
-    private function getColumnNamesToTypes(string $tableName): array
-    {
-        $dao = CRM_Core_DAO::executeQuery(
-            "SELECT COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE table_name = '{$tableName}'"
-        );
-
-        $result = [];
-
-        while ($dao->fetch()) {
-            $type = $dao->DATA_TYPE;
-
-            switch ($type) {
-                case 'char':
-                case 'varchar':
-                case 'enum':
-                case 'text':
-                case 'longtext':
-                case 'blob':
-                case 'mediumblob':
-                    $type = 'String';
-                    break;
-                case 'tinyint':
-                case 'smallint':
-                case 'bigint':
-                    $type = 'Int';
-                    break;
-                case 'datetime':
-                    $type = 'Date';
-                    break;
-                case 'decimal':
-                case 'double':
-                    $type = 'Float';
-                    break;
-                default:
-                    $type = ucfirst($type);
-            }
-
-            $result[$dao->COLUMN_NAME] = $type;
-        }
-
-        return $result;
     }
 }
