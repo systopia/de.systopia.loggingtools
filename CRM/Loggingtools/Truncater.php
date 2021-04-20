@@ -67,7 +67,7 @@ class CRM_Loggingtools_Truncater
 
         $this->initialise($tableName, $helperTableName);
         $this->populateHelperTable($tableName, $helperTableName, $keepSinceDateTimeString);
-        $this->deleteOldEntries($tableName, $helperTableName);
+        $this->deleteOldEntries($tableName, $helperTableName, $keepSinceDateTimeString);
         $this->setInitialisationEntries($tableName, $helperTableName, $keepSinceDateTimeString);
         $this->finalise($tableName, $helperTableName);
     }
@@ -144,9 +144,13 @@ class CRM_Loggingtools_Truncater
     /**
      * Delete all entries in the logging table for an entity ID that is present in the helper table and has a log_date
      * that is older than the one in the helper table.
+     * Will also delete entries with the log_action set to "Delete" older then the keep date.
      */
-    private function deleteOldEntries(string $tableName, string $helperTableName): void
-    {
+    private function deleteOldEntries(
+        string $tableName,
+        string $helperTableName,
+        string $keepSinceDateTimeString
+    ): void {
         CRM_Core_DAO::executeQuery(
             "DELETE
                 log_table.*
@@ -157,8 +161,18 @@ class CRM_Loggingtools_Truncater
                     ON
                         helper_table.id = log_table.id
             WHERE
-                helper_table.id IS NOT NULL
-                AND log_table.log_date < helper_table.log_date"
+                (
+                    helper_table.id IS NOT NULL
+                    AND log_table.log_date < helper_table.log_date
+                )
+                OR
+                (
+                    log_table.log_action = 'Delete'
+                    AND log_table.log_date < %1
+                )",
+            [
+                1 => [$keepSinceDateTimeString, 'Timestamp']
+            ]
         );
     }
 
