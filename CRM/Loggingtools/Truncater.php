@@ -77,6 +77,26 @@ class CRM_Loggingtools_Truncater
      */
     private function initialise(string $tableName, string $helperTableName): void
     {
+        $this->createIndexes($tableName);
+
+        CRM_Core_DAO::executeQuery("DROP TABLE IF EXISTS {$helperTableName}");
+        CRM_Core_DAO::executeQuery(
+            "CREATE TABLE
+                {$helperTableName}
+            (
+                `id` INTEGER UNSIGNED NOT NULL,
+                `log_date` TIMESTAMP NOT NULL,
+                UNIQUE INDEX `id` (`id`),
+                INDEX `log_date` (`log_date`)
+            )"
+        );
+    }
+
+    /**
+     * Create all indexes on the given table used in trancation, especially for performance improvements.
+     */
+    private function createIndexes(string $tableName): void
+    {
         foreach (self::INDEX_COLUMNS as $indexColumn) {
             $indexName = self::INDEX_PREFIX . $indexColumn;
 
@@ -96,18 +116,6 @@ class CRM_Loggingtools_Truncater
                 CRM_Core_DAO::executeQuery("CREATE INDEX {$indexName} ON {$tableName}({$indexColumn})");
             }
         }
-
-        CRM_Core_DAO::executeQuery("DROP TABLE IF EXISTS {$helperTableName}");
-        CRM_Core_DAO::executeQuery(
-            "CREATE TABLE
-                {$helperTableName}
-            (
-                `id` INTEGER UNSIGNED NOT NULL,
-                `log_date` TIMESTAMP NOT NULL,
-                UNIQUE INDEX `id` (`id`),
-                INDEX `log_date` (`log_date`)
-            )"
-        );
     }
 
     /**
@@ -190,14 +198,14 @@ class CRM_Loggingtools_Truncater
                 {$helperTableName} AS helper_table
                     ON
                         helper_table.id = log_table.id
+                        AND helper_table.log_date = log_table.log_date
             SET
                 log_table.log_action := 'Initialization',
                 log_table.log_date := %1,
                 log_table.log_user_id := {$userId},
                 log_table.log_conn_id := NULL
             WHERE
-                helper_table.id IS NOT NULL
-                AND log_table.log_date = helper_table.log_date",
+                helper_table.id IS NOT NULL",
             [
                 1 => [$keepSinceDateTimeString, 'Timestamp']
             ]
