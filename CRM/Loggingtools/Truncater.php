@@ -87,7 +87,7 @@ class CRM_Loggingtools_Truncater
                 FROM
                     information_schema.statistics
                 WHERE
-                    table_name = {$tableName} AND index_name = '{$indexName}'"
+                    table_name = '{$tableName}' AND index_name = '{$indexName}'"
             );
 
             $indexCount = $dao->fetchValue();
@@ -148,7 +148,9 @@ class CRM_Loggingtools_Truncater
     private function deleteOldEntries(string $tableName, string $helperTableName): void
     {
         CRM_Core_DAO::executeQuery(
-            "DELETE FROM
+            "DELETE
+                log_table.*
+            FROM
                 {$tableName} AS log_table
             LEFT JOIN
                 {$helperTableName} AS helper_table
@@ -177,7 +179,7 @@ class CRM_Loggingtools_Truncater
             SET
                 log_table.log_action := 'Initialization',
                 log_table.log_date := %1,
-                log_table.log_user_id := {$userId}
+                log_table.log_user_id := {$userId},
                 log_table.log_conn_id := NULL
             WHERE
                 helper_table.id IS NOT NULL
