@@ -208,7 +208,7 @@ class CRM_Loggingtools_Truncater
         string $helperTableName,
         string $keepSinceDateTimeString
     ): void {
-        $userId = CRM_Core_Session::getLoggedInContactID();
+        $userId = CRM_Core_Session::getLoggedInContactID() ?? 'NULL';
 
         CRM_Core_DAO::executeQuery(
             "UPDATE
