@@ -125,8 +125,13 @@ class CRM_Loggingtools_Truncater
                     COUNT(*)
                 FROM
                     information_schema.statistics
-                WHERE
-                    table_name = '{$tableName}' AND index_name = '{$indexName}'"
+                WHERE table_name = %1 
+                  AND index_name = %2
+                  AND table_schema = %3", [
+                        1 => [$tableName, 'String'],
+                        2 => [$indexName, 'String'],
+                        3 => [CRM_Core_DAO::getDatabaseName(), 'String'],
+                    ]
             );
 
             $indexCount = $dao->fetchValue();
@@ -243,5 +248,7 @@ class CRM_Loggingtools_Truncater
 
             CRM_Core_DAO::executeQuery("DROP INDEX {$indexName} ON {$tableName}");
         }
+
+        // todo: drop created indexes?
     }
 }
