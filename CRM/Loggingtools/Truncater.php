@@ -22,7 +22,7 @@ use CRM_Loggingtools_ExtensionUtil as E;
 class CRM_Loggingtools_Truncater
 {
     private const INDEX_COLUMNS = ['id', 'log_date'];
-    private const INDEX_PREFIX = 'truncation_'; // TODO: Do we need a better naming for the indexes?
+    private const INDEX_PREFIX = 'truncation_';
 
     /**
      * Truncate the given logging table.
@@ -77,6 +77,7 @@ class CRM_Loggingtools_Truncater
      */
     private function initialise(string $tableName, string $helperTableName): void
     {
+        // create indexes for id and log_date
         $this->createIndexes($tableName);
 
         CRM_Core_DAO::executeQuery("DROP TABLE IF EXISTS {$helperTableName}");
@@ -93,7 +94,7 @@ class CRM_Loggingtools_Truncater
     }
 
     /**
-     * Create all indexes on the given table used in trancation, especially for performance improvements.
+     * Create all indexes on the given table used in truncation, especially for performance improvements.
      */
     private function createIndexes(string $tableName): void
     {
