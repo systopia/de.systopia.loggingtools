@@ -16,6 +16,10 @@
 
 <h3>{ts}Logging Tools Truncation{/ts}</h3>
 
+<p class="red warning">
+  {ts}WARNING: This process could potentially damage your logging data. Be sure to have a backup before proceeding.{/ts}
+</p>
+
 <p>
     {ts}You can choose a time horizon for since when the logging table entries shall be kept. All entries older than the given time frame (or point in time) will be deleted.{/ts}
 </p>
@@ -41,7 +45,7 @@
 <br>
 
 <p class="red warning">
-    {ts}WARNING: This process is irreversible and dangerous. It must not be haltet until full completion. Note that logging is disabled while truncating, meaning that every changes in the meantime will invalidate the logging tables.{/ts}
+    {ts}WARNING: This process must not be halted until full completion. Note that logging has to disabled while truncating, meaning that any changes during the process will not be recorded.{/ts}
 </p>
 
 <div class="crm-submit-buttons">
