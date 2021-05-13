@@ -68,7 +68,7 @@ class CRM_Loggingtools_Truncater
     ): void {
 
         // make sure table name is sane
-        if (!preg_match('/^log_[a-zA-Z_]+$/', $tableName)) {
+        if (!preg_match('/^log_[a-zA-Z][a-zA-Z0-9_]+$/', $tableName)) {
             throw new Exception(E::ts("Invalid table name '%1'", [1 => $tableName]));
         }
 
