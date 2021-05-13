@@ -34,7 +34,8 @@ class CRM_Loggingtools_Queue_Runner_TruncationRunner
         $this->tableName = $tableName;
         $this->cleanupDeletedEntities = $cleanupDeletedEntities;
 
-        $this->title = E::ts('Truncating table "%1".', [1 => $tableName]);
+        // this will only be displayed by the runner _after_ it's been executed
+        $this->title = E::ts('Truncated table "%1".', [1 => $tableName]);
     }
 
     public function run(): bool
