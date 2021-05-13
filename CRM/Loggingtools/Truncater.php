@@ -54,7 +54,8 @@ class CRM_Loggingtools_Truncater
         }
 
         $transaction->commit();
-        Civi::log()->debug("Truncation of '{$tableName}' took %1 seconds", [1 => (int) (microtime(true) - $timestamp)]);
+        $seconds_elapsed = (int) (microtime(true) - $timestamp);
+        Civi::log()->debug("Truncation of '{$tableName}' took {$seconds_elapsed}s");
     }
 
     /**
