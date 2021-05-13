@@ -42,11 +42,28 @@ function _civicrm_api3_logging_truncator_truncate_table_spec(&$params)
  */
 function civicrm_api3_logging_truncator_truncate_table($params)
 {
+    // check input
     if (substr($params['table_name'], 0, 4) != 'log_') {
         return civicrm_api3_create_error(E::ts("Table '%1' is not a log table.", [1 => $params['table_name']]));
     }
 
+    // check if logging is enabled
+    $loggingControl = new CRM_Logging_Schema();
+    $logging_enabled = $loggingControl->isEnabled();
+
+    // disable logging
+    if ($logging_enabled) {
+        $loggingControl->disableLogging();
+    }
+
+    // truncate table
     $truncator = new CRM_Loggingtools_Truncater();
     $truncator->truncate($params['cutoff'], $params['table_name']);
+
+    // re-enable logging
+    if ($logging_enabled) {
+        $loggingControl->enableLogging();
+    }
+
     return civicrm_api3_create_success();
 }
