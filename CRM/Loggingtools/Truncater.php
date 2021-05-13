@@ -63,8 +63,17 @@ class CRM_Loggingtools_Truncater
         string $tableName,
         bool $cleanupDeletedEntities = false // TODO: Implement full entity cleanup.
     ): void {
-        $helperTableName = $tableName . '_truncation';
 
+        // make sure table name is sane
+        if (!preg_match('/^log_[a-zA-Z_]+$/', $tableName)) {
+            throw new Exception(E::ts("Invalid table name '%1'", [1 => $tableName]));
+        }
+
+        // convert ARCHIVE type tables
+        $this->convertArchiveTable($tableName);
+
+        // now to the actual truncation process
+        $helperTableName = $tableName . '_truncation';
         $this->initialise($tableName, $helperTableName);
         $this->populateHelperTable($tableName, $helperTableName, $keepSinceDateTimeString);
         $this->deleteOldEntries($tableName, $helperTableName, $keepSinceDateTimeString);
@@ -73,28 +82,41 @@ class CRM_Loggingtools_Truncater
     }
 
     /**
-     * Initialise the database table structure.
+     * Convert any ARCHIVE tables to InnoDB before proceeding
      */
-    private function initialise(string $tableName, string $helperTableName): void
+    private function convertArchiveTable(string $tableName): void
     {
-        // make sure table name is sane
-        if (!preg_match('/^[a-zA-Z_]+$/', $tableName)) {
-            throw new Exception(E::ts("Invalid table name '%1'", [1 => $tableName]));
-        }
-
         // check DB engine
         $table_engine = CRM_Core_DAO::singleValueQuery("
          SELECT ENGINE 
          FROM information_schema.TABLES
          WHERE TABLE_SCHEMA = %1
            AND TABLE_NAME = %2", [
-               1 => [CRM_Core_DAO::getDatabaseName(), 'String'],
-               2 => [$tableName, 'String'],
+            1 => [CRM_Core_DAO::getDatabaseName(), 'String'],
+            2 => [$tableName, 'String'],
         ]);
-        if ($table_engine == 'ARCHIVE') {
-            throw new Exception(E::ts("Cannot truncate ARCHIVE tables, please convert first."));
-        }
 
+        if ($table_engine == 'ARCHIVE') {
+            // rename table to _archive
+            $archive_table_name = $tableName . '_archive';
+            CRM_Core_DAO::executeQuery("RENAME TABLE {$tableName} TO {$archive_table_name}");
+
+            // create a copy with ENGINE InnoDB
+            //  todo: derive the charset and collation?
+            CRM_Core_DAO::executeQuery("
+             CREATE TABLE {$tableName} ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
+             SELECT * FROM {$archive_table_name}");
+
+            // drop old archive table
+            CRM_Core_DAO::executeQuery("DROP TABLE {$archive_table_name}");
+        }
+    }
+
+    /**
+     * Initialise the database table structure.
+     */
+    private function initialise(string $tableName, string $helperTableName): void
+    {
         // create indexes for id and log_date
         $this->createIndexes($tableName);
 
