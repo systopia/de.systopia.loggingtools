@@ -25,7 +25,7 @@ function _civicrm_api3_logging_truncator_truncate_table_spec(&$params)
         'api.required' => 1,
         'type' => CRM_Utils_Type::T_STRING,
         'title' => E::ts('Table name'),
-        'description' => E::ts('The table name of the log table to be truncated'),
+        'description' => E::ts('The table name of the log table to be truncated. Or "all" for all of them.'),
     ];
     $params['cutoff'] = [
         'name' => 'cutoff',
@@ -43,8 +43,15 @@ function _civicrm_api3_logging_truncator_truncate_table_spec(&$params)
 function civicrm_api3_logging_truncator_truncate_table($params)
 {
     // check input
-    if (substr($params['table_name'], 0, 4) != 'log_') {
+    if (substr($params['table_name'], 0, 4) != 'log_' && $params['table_name'] =! 'all') {
         return civicrm_api3_create_error(E::ts("Table '%1' is not a log table.", [1 => $params['table_name']]));
+    }
+
+    $table_names = [];
+    if ($params['table_name'] == 'all') {
+        $table_names = array_keys(CRM_Loggingtools_Form_Truncation::getLoggingTables());
+    } else {
+        $table_names[] = $params['table_name'];
     }
 
     // check if logging is enabled
@@ -56,9 +63,11 @@ function civicrm_api3_logging_truncator_truncate_table($params)
         $loggingControl->disableLogging();
     }
 
-    // truncate table
+    // truncate table(s)
     $truncator = new CRM_Loggingtools_Truncater();
-    $truncator->truncate($params['cutoff'], $params['table_name']);
+    foreach ($table_names as $table_name) {
+        $truncator->truncate($params['cutoff'], $table_name);
+    }
 
     // re-enable logging
     if ($logging_enabled) {

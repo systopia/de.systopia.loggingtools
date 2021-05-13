@@ -51,7 +51,7 @@ class CRM_Loggingtools_Form_Truncation extends CRM_Core_Form
             'select',
             'logging_tables',
             E::ts('Logging tables:'),
-            $this->getLoggingTables(),
+            self::getLoggingTables(),
             false,
             [
                 'class' => 'crm-select2 huge',
@@ -80,7 +80,7 @@ class CRM_Loggingtools_Form_Truncation extends CRM_Core_Form
     {
         $values  = $this->exportValues();
 
-        $allowedLoggingTables = $this->getLoggingTables();
+        $allowedLoggingTables = self::getLoggingTables();
         $loggingTables = $values['logging_tables'];
 
         foreach ($loggingTables as $loggingTable) {
@@ -123,7 +123,7 @@ class CRM_Loggingtools_Form_Truncation extends CRM_Core_Form
         $loggingTables = $values['logging_tables'];
         if (empty($loggingTables)) {
             // 'no tables' means 'all tables'
-            $loggingTables = array_keys($this->getLoggingTables());
+            $loggingTables = array_keys(self::getLoggingTables());
         }
 
         $cleanupDeletedEntities = false;
@@ -164,7 +164,7 @@ class CRM_Loggingtools_Form_Truncation extends CRM_Core_Form
      * @return array
      *   map: logging table name => logging table name (key and value are identical)
      */
-    private function getLoggingTables(): array
+    public static function getLoggingTables(): array
     {
         $loggingControl = new CRM_Logging_Schema();
         $logTableSpec = $loggingControl->getLogTableSpec();
