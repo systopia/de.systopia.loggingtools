@@ -73,6 +73,7 @@ function civicrm_api3_logging_truncator_truncate_table($params)
     // truncate table(s)
     $truncator = new CRM_Loggingtools_Truncater();
     foreach ($table_names as $table_name) {
+        Civi::log()->debug("Starting truncation of log table '{$table_name}'");
         $truncator->truncate($params['cutoff'], $table_name);
     }
 
