@@ -20,12 +20,12 @@ use CRM_Loggingtools_ExtensionUtil as E;
  */
 function _civicrm_api3_logging_truncator_truncate_table_spec(&$params)
 {
-    $params['table_name'] = [
-        'name' => 'table_name',
+    $params['table_names'] = [
+        'name' => 'table_names',
         'api.required' => 1,
         'type' => CRM_Utils_Type::T_STRING,
-        'title' => E::ts('Table name'),
-        'description' => E::ts('The table name of the log table to be truncated. Or "all" for all of them.'),
+        'title' => E::ts('Table name(s)'),
+        'description' => E::ts('The table name(s) of the log table to be truncated. If more than one, separate with comma, or use "all" for all of them.'),
     ];
     $params['cutoff'] = [
         'name' => 'cutoff',
@@ -38,20 +38,27 @@ function _civicrm_api3_logging_truncator_truncate_table_spec(&$params)
 
 
 /**
- * Run the LoggingTruncator for one specific table
+ * Run the LoggingTruncator for the specified table(s)
  */
 function civicrm_api3_logging_truncator_truncate_table($params)
 {
-    // check input
-    if (substr($params['table_name'], 0, 4) != 'log_' && $params['table_name'] =! 'all') {
-        return civicrm_api3_create_error(E::ts("Table '%1' is not a log table.", [1 => $params['table_name']]));
+    // extract table names
+    $table_names = $params['table_names'];
+    if (is_string($table_names)) {
+        $table_names = explode(',', $table_names);
     }
 
-    $table_names = [];
-    if ($params['table_name'] == 'all') {
-        $table_names = array_keys(CRM_Loggingtools_Form_Truncation::getLoggingTables());
-    } else {
-        $table_names[] = $params['table_name'];
+    // sanitise and check input
+    $table_names = array_map('trim', $table_names);
+    foreach ($table_names as $table_name) {
+        if (substr($table_name, 0, 4) != 'log_') {
+            if ($table_name == 'all') {
+                $table_names = array_keys(CRM_Loggingtools_Form_Truncation::getLoggingTables());
+                break;
+            } else {
+                return civicrm_api3_create_error(E::ts("Table '%1' is not a log table.", [1 => $table_name]));
+            }
+        }
     }
 
     // check if logging is enabled
