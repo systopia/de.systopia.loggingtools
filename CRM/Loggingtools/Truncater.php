@@ -39,6 +39,7 @@ class CRM_Loggingtools_Truncater
         string $tableName,
         bool $cleanupDeletedEntities = false
     ): void {
+        $timestamp = microtime(true);
         $transaction = new CRM_Core_Transaction();
 
         try {
@@ -53,6 +54,7 @@ class CRM_Loggingtools_Truncater
         }
 
         $transaction->commit();
+        Civi::log()->debug("Truncation of '{$tableName}' took %1 seconds", [1 => (int) (microtime(true) - $timestamp)]);
     }
 
     /**
