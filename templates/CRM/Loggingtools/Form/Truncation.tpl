@@ -17,7 +17,7 @@
 <h3>{ts}Logging Tools Truncation{/ts}</h3>
 
 <p class="red warning">
-  {ts}WARNING: This process could potentially damage your logging data. Be sure to have a backup before proceeding.{/ts}
+  {ts}<b>WARNING</b>: This process could potentially damage your logging data. Be sure to have a backup before proceeding.{/ts}
 </p>
 
 <p>
@@ -31,7 +31,7 @@
     <div class="content">{$form.time_horizon.html}</div>
     <div class="clear"></div>
 </div>
-<div class="crm-section">
+<div class="crm-section custom-time-horizon" style="display: none;">
     <div class="label">{$form.custom_time_horizon.label}</div>
     <div class="content">{$form.custom_time_horizon.html}</div>
     <div class="clear"></div>
@@ -45,11 +45,26 @@
 <br>
 
 <p class="red warning">
-    {ts}WARNING: This process must not be halted until full completion. Note that logging has to disabled while truncating, meaning that any changes during the process will not be recorded.{/ts}
+    {ts}<b>WARNING</b>: This process must not be halted until full completion. Note that logging has to be disabled while truncating, meaning that any changes during the process will not be recorded.{/ts}
 </p>
 
 <div class="crm-submit-buttons">
 {include file="CRM/common/formButtons.tpl" location="bottom"}
 </div>
 
+{literal}
+<script>
+  cj(document).ready(function() {
+    cj("select[name=time_horizon]").change(function() {
+      let current_value = cj("select[name=time_horizon]").val();
+      if (current_value === 'custom') {
+        cj("div.custom-time-horizon").show();
+      } else {
+        cj("div.custom-time-horizon").hide();
+      }
+    });
+  });
+</script>
+{/literal}
 {/crmScope}
+

@@ -41,7 +41,7 @@ class CRM_Loggingtools_Form_Truncation extends CRM_Core_Form
         $this->add(
             'datepicker',
             'custom_time_horizon',
-            E::ts('Custom date:'),
+            E::ts('Custom cutoff date:'),
             $this->getTimeHorizons(),
             false,
             ['class' => 'huge disabled']
@@ -56,9 +56,9 @@ class CRM_Loggingtools_Form_Truncation extends CRM_Core_Form
             [
                 'class' => 'crm-select2 huge',
                 'multiple' => true,
+                'placeholder' => E::ts('all logging tables'),
             ]
         );
-        // TODO: There must be a possibility to easily select all logging tables.
 
         $this->addButtons(
             [
@@ -122,8 +122,8 @@ class CRM_Loggingtools_Form_Truncation extends CRM_Core_Form
 
         $loggingTables = $values['logging_tables'];
         if (empty($loggingTables)) {
-            $loggingTables = $this->getLoggingTables();
-            // TODO: This is not as clean as it should because getLoggingTables is a UI function returning a map.
+            // 'no tables' means 'all tables'
+            $loggingTables = array_keys($this->getLoggingTables());
         }
 
         $cleanupDeletedEntities = false;
