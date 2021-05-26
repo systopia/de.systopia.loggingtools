@@ -72,6 +72,21 @@ class CRM_Loggingtools_Truncater
             throw new Exception(E::ts("Invalid table name '%1'", [1 => $tableName]));
         }
 
+        // make sure the table has an id column, SKIP otherwise
+        $id_column_exists = CRM_Core_DAO::singleValueQuery("
+         SELECT ORDINAL_POSITION 
+         FROM information_schema.COLUMNS
+         WHERE COLUMN_NAME = 'id'
+           AND TABLE_SCHEMA = %1
+           AND TABLE_NAME = %2
+         LIMIT 1", [
+            1 => [CRM_Core_DAO::getDatabaseName(), 'String'],
+            2 => [$tableName, 'String'],
+        ]);
+        if (empty($id_column_exists)) {
+            throw new Exception(E::ts("Table '%1' has no 'id' column, skipped.", [1 => $tableName]));
+        }
+
         // convert ARCHIVE type tables
         $this->convertArchiveTable($tableName);
 
