@@ -84,7 +84,7 @@ class CRM_Loggingtools_Truncater
             2 => [$tableName, 'String'],
         ]);
         if (empty($id_column_exists)) {
-            Civi::log()->debug("Table '%1' has no 'id' column, skipped.", [1 => $tableName]);
+            Civi::log()->warning("Table {$tableName} has no 'id' column, skipped.");
             return;
         }
 
