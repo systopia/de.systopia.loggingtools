@@ -84,7 +84,7 @@ class CRM_Loggingtools_Truncater
             2 => [$tableName, 'String'],
         ]);
         if (empty($id_column_exists)) {
-            throw new Exception(E::ts("Table '%1' has no 'id' column, skipped.", [1 => $tableName]));
+            throw new Exception(E::ts("Table has no 'id' column, skipped."));
         }
 
         // convert ARCHIVE type tables
