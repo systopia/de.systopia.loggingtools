@@ -74,7 +74,7 @@ class CRM_Loggingtools_Truncater
 
         // make sure the table has an id column, SKIP otherwise
         $id_column_exists = CRM_Core_DAO::singleValueQuery("
-         SELECT ORDINAL_POSITION 
+         SELECT ORDINAL_POSITION
          FROM information_schema.COLUMNS
          WHERE COLUMN_NAME = 'id'
            AND TABLE_SCHEMA = %1
@@ -92,7 +92,7 @@ class CRM_Loggingtools_Truncater
         $this->convertArchiveTable($tableName);
 
         // now to the actual truncation process
-        $helperTableName = $tableName . '_truncation';
+        $helperTableName = CRM_Utils_SQL_TempTable::build()->getName();
         $this->initialise($tableName, $helperTableName);
         $this->populateHelperTable($tableName, $helperTableName, $keepSinceDateTimeString);
         $this->deleteOldEntries($tableName, $helperTableName, $keepSinceDateTimeString);
@@ -107,7 +107,7 @@ class CRM_Loggingtools_Truncater
     {
         // check DB engine
         $table_engine = CRM_Core_DAO::singleValueQuery("
-         SELECT ENGINE 
+         SELECT ENGINE
          FROM information_schema.TABLES
          WHERE TABLE_SCHEMA = %1
            AND TABLE_NAME = %2", [
@@ -166,7 +166,7 @@ class CRM_Loggingtools_Truncater
                     COUNT(*)
                 FROM
                     information_schema.statistics
-                WHERE table_name = %1 
+                WHERE table_name = %1
                   AND index_name = %2
                   AND table_schema = %3", [
                         1 => [$tableName, 'String'],
