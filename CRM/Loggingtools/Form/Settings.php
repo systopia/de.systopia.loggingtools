@@ -95,7 +95,7 @@ class CRM_Loggingtools_Form_Settings extends CRM_Core_Form
         $tables = preg_grep('/_bak$/', $tables, PREG_GREP_INVERT);
         $tables = preg_grep('/_backup$/', $tables, PREG_GREP_INVERT);
         $tables = preg_grep('/^civicrm_mailing_event_/', $tables, PREG_GREP_INVERT);
-        $tables = array_diff($tables, array('civicrm_mailing_recipients'));
+        $tables = array_diff($tables, ['civicrm_mailing_recipients']);
 
         // create a labelled version of it
         $labeled_tables = [];
